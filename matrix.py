@@ -13,13 +13,13 @@ class Matrix:
     def det(self):
         return self.calc_det(dict(), self.row_count)[0]
 
-    def calc_det(self, cache, size, bitmask=""):
-        if bitmask == "":
+    def calc_det(self, cache, size, bitmask=''):
+        if bitmask == '':
             bitmask = '0' * size
         if bitmask in cache:
             return cache[bitmask], cache
         if self.row_count != self.column_count:
-            raise ValueError("Определитель матрицы не имеет смысл для неквадратной матрицы")
+            raise ValueError('Определитель матрицы не имеет смысл для неквадратной матрицы')
         if size == 1:
             return self.elements[0][0], cache
         elif size == 2:

@@ -20,8 +20,8 @@ class Window(QMainWindow):
 
     def __init__(self):
         super().__init__()
-        uic.loadUi("form.ui", self)
-        self.output_label.setText("Здесь появится результат вычислений")
+        uic.loadUi('form.ui', self)
+        self.output_label.setText('Здесь появится результат вычислений')
         self.input_matrix_widget.setRowCount(1)
         self.input_matrix_widget.setColumnCount(1)
         self.row_count = 1
@@ -87,16 +87,16 @@ class Window(QMainWindow):
                     row.append(float(text) if text else 0)
                 elements.append(row)
         except ValueError:
-            self.output_label.setText("Элементы матрицы должны быть числами")
+            self.output_label.setText('Элементы матрицы должны быть числами')
             return
         matrix = Matrix(elements)
         try:
-            self.output_label.setText(f"Определитель матрицы = {str(matrix.det())}")
+            self.output_label.setText(f'Определитель матрицы = {str(matrix.det())}')
         except ValueError as e:
             self.output_label.setText(str(e))
 
     def read_file(self):
-        filename = QFileDialog.getOpenFileName(self, "Выгрузка файла", ".")[0]
+        filename = QFileDialog.getOpenFileName(self, 'Выгрузка файла', '.')[0]
         self.input_matrix_widget.blockSignals(True)
         try:
             matrix = fileutils.read_matrix_from_file(filename)
@@ -110,7 +110,7 @@ class Window(QMainWindow):
                 for c in range(len(matrix[0])):
                     self.input_matrix_widget.setItem(r, c, QTableWidgetItem(str(matrix[r][c])))
         except FileNotFoundError:
-            self.output_label.setText("Не получилось прочитать файл")
+            self.output_label.setText('Не получилось прочитать файл')
         finally:
             self.input_matrix_widget.blockSignals(False)
 

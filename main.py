@@ -31,29 +31,50 @@ class Window(QMainWindow):
         self.read_matrix_button.clicked.connect(self.read_file)
 
     def is_item_empty(self, r, c):
+        """
+        Проверяет, что ячейка таблицы ввода с данными координатами не имеет содержимого.
+        :param r: Строка ячейки.
+        :param c: Столбец ячейки.
+        :return: True, если ячейка пустая; False, если ячейка непустая.
+        """
         return self.input_matrix_widget.item(r, c) is None or self.input_matrix_widget.item(r, c).text().strip() != ""
 
     def add_row(self):
+        """
+        Добавляет строку в таблицу ввода.
+        """
         self.input_matrix_widget.setRowCount(self.row_count + 1)
         self.row_count += 1
         for c in range(self.column_count):
             self.input_matrix_widget.setItem(self.row_count - 1, c, QTableWidgetItem(""))
 
     def add_column(self):
+        """
+        Добавляет столбец в таблицу ввода.
+        """
         self.input_matrix_widget.setColumnCount(self.column_count + 1)
         self.column_count += 1
         for r in range(self.row_count):
             self.input_matrix_widget.setItem(r, self.column_count - 1, QTableWidgetItem(""))
 
     def remove_row(self):
+        """
+        Удаляет строку из таблицы ввода.
+        """
         self.input_matrix_widget.setRowCount(self.row_count - 1)
         self.row_count -= 1
 
     def remove_column(self):
+        """
+        Удаляет столбец из таблицы ввода.
+        """
         self.input_matrix_widget.setColumnCount(self.column_count - 1)
         self.column_count -= 1
 
     def update_table(self):
+        """
+        Данный метод вызывается каждый раз, когда пользователь обновляет значение ячейки в таблице ввода.
+        """
         self.input_matrix_widget.blockSignals(True)
         for c in range(self.column_count):
             if self.is_item_empty(self.row_count - 1, c):
@@ -78,6 +99,10 @@ class Window(QMainWindow):
         self.input_matrix_widget.blockSignals(False)
 
     def calc_det(self):
+        """
+        Считывает матрицу из таблицы ввода и производит расчёт определителя.
+        :return:
+        """
         elements = []
         try:
             for r in range(self.row_count - 1):
@@ -91,11 +116,14 @@ class Window(QMainWindow):
             return
         matrix = Matrix(elements)
         try:
-            self.output_label.setText(f'Определитель матрицы = {str(matrix.det())}')
+            self.output_label.setText(f'Определитель матрицы = {matrix.det()}')
         except ValueError as e:
             self.output_label.setText(str(e))
 
     def read_file(self):
+        """
+        Считывает матрицу из файла и записывает её в таблицу ввода.
+        """
         filename = QFileDialog.getOpenFileName(self, 'Выгрузка файла', '.')[0]
         self.input_matrix_widget.blockSignals(True)
         try:

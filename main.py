@@ -1,5 +1,5 @@
 import sys
-from PyQt5.QtWidgets import QMainWindow, QApplication, QTableWidget, QPushButton, QLabel, QTableWidgetItem, QFileDialog
+from PyQt5.QtWidgets import *
 from PyQt5 import uic
 
 import fileutils
@@ -13,21 +13,23 @@ def except_hook(cls, exception, traceback):
 class Window(QMainWindow):
     input_matrix_widget: QTableWidget
     calc_det_button: QPushButton
+    solve_cramer_button: QPushButton
     read_matrix_button: QPushButton
-    output_label: QLabel
+    status_widget: QTextEdit
     row_count: int
     column_count: int
 
     def __init__(self):
         super().__init__()
         uic.loadUi('form.ui', self)
-        self.output_label.setText('Здесь появится результат вычислений')
+        self.status_widget.setText('Здесь появится результат вычислений')
         self.input_matrix_widget.setRowCount(1)
         self.input_matrix_widget.setColumnCount(1)
         self.row_count = 1
         self.column_count = 1
         self.input_matrix_widget.cellChanged.connect(self.update_table)
         self.calc_det_button.clicked.connect(self.calc_det)
+        self.solve_cramer_button.clicked.connect(self.solve_cramer)
         self.read_matrix_button.clicked.connect(self.read_file)
 
     def is_item_empty(self, r, c):
@@ -101,24 +103,39 @@ class Window(QMainWindow):
     def calc_det(self):
         """
         Считывает матрицу из таблицы ввода и производит расчёт определителя.
-        :return:
         """
-        elements = []
-        try:
-            for r in range(self.row_count - 1):
-                row = []
-                for c in range(self.column_count - 1):
-                    text = self.input_matrix_widget.item(r, c).text()
-                    row.append(float(text) if text else 0)
-                elements.append(row)
-        except ValueError:
-            self.output_label.setText('Элементы матрицы должны быть числами')
+        self.status_widget.setText('Выполняется...')
+        self.status_widget.repaint()
+        elements = self.get_matrix_from_table()
+        if elements is None:
             return
-        matrix = Matrix(elements)
         try:
-            self.output_label.setText(f'Определитель матрицы = {matrix.det()}')
+            matrix = Matrix(elements)
+            result = matrix.det()
+            self.status_widget.setText(f'Определитель матрицы = {result}')
         except ValueError as e:
-            self.output_label.setText(str(e))
+            self.status_widget.setText(str(e))
+
+    def solve_cramer(self):
+        """
+        Считывает матрицу из таблицы ввода и решает систему линейных уравнений из матрицы методом Крамера.
+        """
+        self.status_widget.setText('Выполняется...')
+        self.status_widget.repaint()
+        elements = self.get_matrix_from_table()
+        if elements is None:
+            return
+        try:
+            matrix = Matrix(elements)
+            result = matrix.solve_cramer()
+            status_string = 'Система имеет решение:\n'
+            for i, x in enumerate(result):
+                if i != 0:
+                    status_string += ', '
+                status_string += f'x{i+1} = {result[i]}'
+            self.status_widget.setText(status_string)
+        except ValueError as e:
+            self.status_widget.setText(str(e))
 
     def read_file(self):
         """
@@ -138,9 +155,27 @@ class Window(QMainWindow):
                 for c in range(len(matrix[0])):
                     self.input_matrix_widget.setItem(r, c, QTableWidgetItem(str(matrix[r][c])))
         except FileNotFoundError:
-            self.output_label.setText('Не получилось прочитать файл')
+            self.status_widget.setText('Не получилось прочитать файл')
         finally:
             self.input_matrix_widget.blockSignals(False)
+
+    def get_matrix_from_table(self):
+        """
+        Считывает список элементов из исходной таблицы.
+        :return: Список элементов
+        """
+        elements = []
+        try:
+            for r in range(self.row_count - 1):
+                row = []
+                for c in range(self.column_count - 1):
+                    text = self.input_matrix_widget.item(r, c).text()
+                    row.append(float(text) if text else 0)
+                elements.append(row)
+        except ValueError:
+            self.status_widget.setText('Элементы матрицы должны быть числами')
+            return None
+        return elements
 
 
 if __name__ == '__main__':

@@ -9,7 +9,11 @@ class Matrix:
     def __init__(self, elements):
         self.elements = elements
         self.row_count = len(elements)
+        if self.row_count == 0:
+            raise ValueError('Матрица не имеет ни одной строки')
         self.column_count = len(elements[0])
+        if self.column_count == 0:
+            raise ValueError('Матрица не имеет ни одного столбца')
 
     def __str__(self):
         result = ''
@@ -80,7 +84,7 @@ class Matrix:
         const_terms = self.get_col(self.column_count - 1)
         coefficients = self.remove_col(self.column_count - 1)
         denominator = coefficients.det()
-        unknowns = []
+        solution = []
         for c in range(coefficients.column_count):
             numerator = coefficients.replace_col(const_terms, c).det()
             if denominator == 0:
@@ -89,8 +93,11 @@ class Matrix:
                 else:
                     raise ValueError('Система не имеет решений')
             else:
-                unknowns.append(numerator / denominator)
-        return unknowns
+                if numerator == 0:
+                    solution.append(0.0)
+                else:
+                    solution.append(numerator / denominator)
+        return solution
 
     def get_row(self, r):
         """

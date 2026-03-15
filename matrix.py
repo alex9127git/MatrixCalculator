@@ -1,4 +1,4 @@
-from mathutils import float_equals
+from mathutils import float_equals, multiply_row, add_rows, strf, is_zeroes
 
 
 class Matrix:
@@ -18,7 +18,7 @@ class Matrix:
     def __str__(self):
         result = ''
         for row in self.elements:
-            result += '\t'.join(map(str, row))
+            result += '\t'.join(map(strf, row))
             result += '\n'
         return result.strip()
 
@@ -34,6 +34,9 @@ class Matrix:
                 if not float_equals(self.elements[r][c], other.elements[r][c]):
                     return False
         return True
+
+    def __ne__(self, other):
+        return not (self == other)
 
     def det(self):
         """
@@ -77,6 +80,11 @@ class Matrix:
             return d, cache
 
     def solve_cramer(self):
+        """
+        Считает корни системы линейных уравнений, представленной этой матрицей, методом Крамера.
+        Сложность алгоритма = O(n*2^n), где n - количество строк матрицы.
+        :return: Список корней системы линейных уравнений.
+        """
         if (self.row_count + 1) > self.column_count:
             raise ValueError(f'Слишком много уравнений для системы с {self.column_count - 1} неизвестными')
         if (self.row_count + 1) < self.column_count:
@@ -99,7 +107,101 @@ class Matrix:
                     solution.append(numerator / denominator)
         return solution
 
-    def get_row(self, r):
+    def beautify_gauss(self):
+        """
+        Приводит матрицу к виду, содержащему X строк и X + 1 столбцов, для решения методом Гаусса
+        путём удаления столбцов, состоящих из нулей, и добавления строк с нулями.
+        :return: Изменённая матрица.
+        """
+        remaining_columns = []
+        for c in range(self.column_count - 1):
+            if not is_zeroes(self.get_col(c)):
+                remaining_columns.append(c)
+        remaining_columns.append(self.column_count - 1)
+        remaining_elements = []
+        for row in self.elements:
+            remaining_elements.append([e for c, e in enumerate(row) if c in remaining_columns])
+        return Matrix(remaining_elements)
+
+    def convert_to_row_echelon(self):
+        """
+        Переводит матрицу линейных уравнений в ступенчатый вид, то есть такой,
+        где для строки с индексом r первые r элементов являются нулями.
+        :return: Матрица ступенчатого вида.
+        """
+        row_echelon = self.beautify_gauss()
+
+        for sr in range(0, row_echelon.column_count - 2):
+            if row_echelon.get_row(sr)[sr] == 0:
+                r = sr
+                while r < row_echelon.row_count and row_echelon.get_row(r)[sr] == 0:
+                    r += 1
+                if r == row_echelon.row_count:
+                    if not is_zeroes(row_echelon.get_row(sr)):
+                        row_echelon = row_echelon.insert_row([0] * row_echelon.column_count, sr)
+                    continue
+                else:
+                    row_echelon = row_echelon.swap_rows(sr, r)
+            head_row = row_echelon.get_row(sr)
+            head_coef = head_row[sr]
+            for r in range(sr + 1, row_echelon.row_count):
+                curr_row = row_echelon.get_row(r)
+                curr_coef = curr_row[sr]
+                coef = -curr_coef / head_coef
+                row_echelon = row_echelon.replace_row(add_rows(curr_row, multiply_row(head_row, coef)), r)
+        return row_echelon
+
+    def convert_to_diag(self):
+        """
+        Переводит матрицу линейных уравнений в диагональный вид, то есть такой,
+        где для строки с индексом r все элементы, кроме элемента с индексом r, являются нулями.
+        :return: Матрица диагонального вида.
+        """
+        row_echelon = self.convert_to_row_echelon()
+        diag = Matrix(row_echelon.elements)
+        for r in range(diag.row_count - 2, -1, -1):
+            for c in range(r + 1, diag.row_count):
+                head_row = diag.get_row(c)
+                head_coef = head_row[c]
+                if head_coef == 0:
+                    continue
+                curr_row = diag.get_row(r)
+                curr_coef = curr_row[c]
+                coef = -curr_coef / head_coef
+                diag = diag.replace_row(add_rows(curr_row, multiply_row(head_row, coef)), r)
+        return diag
+
+    def solve_gauss(self):
+        """
+        Считает корни системы линейных уравнений, представленной этой матрицей, методом Гаусса.
+        Сложность
+        :return: Список корней системы линейных уравнений.
+        """
+        diag = self.convert_to_diag()
+        solution = []
+        solution_undefined = False
+        for r in range(diag.row_count - 1, -1, -1):
+            row = diag.get_row(r)
+            if row[r] == 0:
+                if row[-1] != 0:
+                    return []
+                else:
+                    solution.insert(0, 'любое')
+                    solution_undefined = True
+            else:
+                if solution_undefined:
+                    expr = strf(row[-1] / row[r])
+                    for i in range(r + 1, len(row) - 1):
+                        if row[i] == 0:
+                            continue
+                        coef = row[i] / row[r]
+                        expr += f' {'+' if coef < 0 else '-'} {strf(abs(coef)) + ' ' if abs(coef) != 1 else ''}x{i+1}'
+                    solution.insert(0, expr)
+                else:
+                    solution.insert(0, row[-1] / row[r])
+        return solution
+
+    def get_row(self, r) -> list[float]:
         """
         Возвращает строку матрицы по индексу r.
         :param r: Индекс строки, которую нужно получить.
@@ -107,7 +209,7 @@ class Matrix:
         """
         return self.elements[r]
 
-    def get_col(self, c):
+    def get_col(self, c) -> list[float]:
         """
         Возвращает столбец матрицы по индексу c.
         :param c: Индекс столбца, который нужно получить.
@@ -131,7 +233,7 @@ class Matrix:
         """
         return Matrix([self.elements[i][:c] + self.elements[i][c+1:] for i in range(self.row_count)])
 
-    def insert_row(self, row, r):
+    def insert_row(self, row: list[float], r: int):
         """
         Вставляет строку row в матрицу. Новая строка вставлена под индексом r.
         :param row: Строка для вставки.
@@ -154,6 +256,15 @@ class Matrix:
             submatrix[i].insert(c, col[i])
         return Matrix(submatrix)
 
+    def replace_row(self, row, r):
+        """
+        Вставляет строку row в матрицу ВМЕСТО строки под индексом r.
+        :param row: Строка для вставки.
+        :param r: Индекс строки под замену.
+        :return: Изменённая матрица.
+        """
+        return self.remove_row(r).insert_row(row, r)
+
     def replace_col(self, col, c):
         """
         Вставляет столбец col в матрицу ВМЕСТО столбца под индексом c.
@@ -162,3 +273,14 @@ class Matrix:
         :return: Изменённая матрица.
         """
         return self.remove_col(c).insert_col(col, c)
+
+    def swap_rows(self, r1, r2):
+        """
+        Меняет местами строки r1 и r2 в матрице.
+        :param r1: Индекс первой строки.
+        :param r2: Индекс второй строки.
+        :return: Изменённая матрица.
+        """
+        row1 = self.get_row(r1)
+        row2 = self.get_row(r2)
+        return self.replace_row(row2, r1).replace_row(row1, r2)

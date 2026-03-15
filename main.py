@@ -1,4 +1,7 @@
 import sys
+from typing import Any
+
+from PyQt5.QtGui import QColor
 from PyQt5.QtWidgets import *
 from PyQt5 import uic
 
@@ -14,10 +17,12 @@ class Window(QMainWindow):
     input_matrix_widget: QTableWidget
     calc_det_button: QPushButton
     solve_cramer_button: QPushButton
+    solve_gauss_button: QPushButton
     read_matrix_button: QPushButton
     status_widget: QTextEdit
     row_count: int
     column_count: int
+    gauss_warning_displayed: bool
 
     def __init__(self):
         super().__init__()
@@ -30,7 +35,9 @@ class Window(QMainWindow):
         self.input_matrix_widget.cellChanged.connect(self.update_table)
         self.calc_det_button.clicked.connect(self.calc_det)
         self.solve_cramer_button.clicked.connect(self.solve_cramer)
+        self.solve_gauss_button.clicked.connect(self.solve_gauss)
         self.read_matrix_button.clicked.connect(self.read_file)
+        self.gauss_warning_displayed = False
 
     def is_item_empty(self, r, c):
         """
@@ -112,7 +119,7 @@ class Window(QMainWindow):
         try:
             matrix = Matrix(elements)
             result = matrix.det()
-            self.status_widget.setText(f'Определитель матрицы = {result}')
+            self.status_widget.setText(f'Определитель матрицы = {result:g}')
         except ValueError as e:
             self.status_widget.setText(str(e))
 
@@ -137,27 +144,62 @@ class Window(QMainWindow):
         except ValueError as e:
             self.status_widget.setText(str(e))
 
+    def solve_gauss(self):
+        """
+        Считывает матрицу из таблицы ввода и решает систему линейных уравнений из матрицы методом Гаусса.
+        """
+        self.status_widget.setText('Выполняется...')
+        self.status_widget.repaint()
+        elements = self.get_matrix_from_table()
+        if elements is None:
+            return
+        try:
+            matrix = Matrix(elements)
+            if matrix.beautify_gauss() != matrix and not self.gauss_warning_displayed:
+                self.gauss_warning_displayed = True
+                status_string = ('Матрица имеет неиспользуемые неизвестные и будет преобразована.\n'
+                                 'Нажмите на кнопку ещё раз, чтобы продолжить.')
+                self.status_widget.setTextColor(QColor(255, 0, 0))
+            else:
+                self.gauss_warning_displayed = False
+                self.write_matrix_into_table(matrix.beautify_gauss().elements)
+                result = matrix.solve_gauss()
+                if len(result) == 0:
+                    status_string = 'Система не имеет решений'
+                else:
+                    status_string = 'Система имеет решение:\n'
+                    for i, x in enumerate(result):
+                        if i != 0:
+                            status_string += ', '
+                        status_string += f'x{i+1} = {result[i]}'
+                        self.status_widget.setTextColor(QColor(0, 0, 0))
+            self.status_widget.setText(status_string)
+        except ValueError as e:
+            self.status_widget.setText(str(e))
+
     def read_file(self):
         """
         Считывает матрицу из файла и записывает её в таблицу ввода.
         """
         filename = QFileDialog.getOpenFileName(self, 'Выгрузка файла', '.')[0]
-        self.input_matrix_widget.blockSignals(True)
         try:
             matrix = fileutils.read_matrix_from_file(filename)
-            self.input_matrix_widget.setRowCount(0)
-            self.input_matrix_widget.setColumnCount(0)
-            self.input_matrix_widget.setRowCount(len(matrix) + 1)
-            self.input_matrix_widget.setColumnCount(len(matrix[0]) + 1)
-            self.row_count = len(matrix) + 1
-            self.column_count = len(matrix[0]) + 1
-            for r in range(len(matrix)):
-                for c in range(len(matrix[0])):
-                    self.input_matrix_widget.setItem(r, c, QTableWidgetItem(str(matrix[r][c])))
+            self.write_matrix_into_table(matrix)
         except FileNotFoundError:
             self.status_widget.setText('Не получилось прочитать файл')
-        finally:
-            self.input_matrix_widget.blockSignals(False)
+
+    def write_matrix_into_table(self, matrix: list[Any]):
+        self.input_matrix_widget.blockSignals(True)
+        self.input_matrix_widget.setRowCount(0)
+        self.input_matrix_widget.setColumnCount(0)
+        self.input_matrix_widget.setRowCount(len(matrix) + 1)
+        self.input_matrix_widget.setColumnCount(len(matrix[0]) + 1)
+        self.row_count = len(matrix) + 1
+        self.column_count = len(matrix[0]) + 1
+        for r in range(len(matrix)):
+            for c in range(len(matrix[0])):
+                self.input_matrix_widget.setItem(r, c, QTableWidgetItem(str(matrix[r][c])))
+        self.input_matrix_widget.blockSignals(False)
 
     def get_matrix_from_table(self):
         """

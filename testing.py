@@ -1,11 +1,7 @@
 import os
+from mathutils import float_equals, strf
 from datetime import datetime
-
-import mathutils
-from mathutils import *
 from testfuncs import *
-
-
 TEST_FOLDER = 'tests'
 
 
@@ -13,18 +9,37 @@ class TestingSuiteError(BaseException):
     pass
 
 
-def test(test_function, num, test_filename, expected=None):
+def test(num, test_function, test_filename, expected=None):
+    """
+    Проводит один тест.
+    :param num: Номер теста. Используется только для красивого вывода.
+    :param test_function: Функция, которую необходимо протестировать.
+    :param test_filename: Имя файла с входными данными для теста.
+    :param expected: Ожидаемый результат. Если передаётся None, валидации теста не происходит.
+    :return:
+    """
+    if test_group_id == 3 and num == 12:
+        print('Entered debug')
+    start = datetime.now()
     try:
-        start = datetime.now()
         actual = test_function(test_filename)
         end = datetime.now()
-        if type(actual) == float and expected is not None:
+        if expected is None:
+            print(f'Тест {num}:\nРезультат:\n{str(actual)}\nВремя = {end - start}')
+        elif type(actual) == float:
             print(f'Тест {num}: Результат = {actual}, Время = {end - start}')
-            assert mathutils.float_equals(actual, expected), f'Тест {num}: {actual} != {expected}'
+            assert float_equals(actual, expected), f'Тест {num}: {actual} != {expected}'
+        elif type(actual) == list and len(actual) > 0 and type(actual[0]) == float:
+            print(f'Тест {num}: Результат = [{', '.join(map(strf, actual))}], Время = {end - start}')
+            assert all([float_equals(actual[i], expected[i])
+                        for i in range(max(len(actual), len(expected)))]), \
+                f'Тест {num}: {actual} != {expected}'
         else:
             print(f'Тест {num}:\nРезультат:\n{str(actual)}\nВремя = {end - start}')
             assert actual == expected, f'Тест {num}: {actual} != {expected}'
     except ValueError as e:
+        end = datetime.now()
+        print(f'Тест {num}:\nРезультат:\n{str(e)}\nВремя = {end - start}')
         assert str(e) == expected, f'Тест {num}: Тест не должен завершаться с ошибкой или должен выдавать другую ошибку'
 
 
@@ -33,8 +48,9 @@ def test_group(test_group_name, test_functions, test_filenames, answer_filename=
     Проводит определённую группу тестов.
     :param test_group_name: Название группы тестов. Используется только для красивого вывода.
     :param test_functions: Список функций, которые требуется протестировать.
-    :param test_filenames: Список вводных данных тестов.
-    :param answer_filename: Список ожидаемых ответов.
+    :param test_filenames: Список файлов с входными данными для тестов.
+    :param answer_filename: Файл с ожидаемыми правильными ответами для тестов. Если передаётся None, предполагается,
+    что правильные ответы для сравнения отсутствуют, и валидация тестов не происходит.
     """
     test_amount = len(test_filenames)
     if answer_filename is not None:
@@ -44,9 +60,11 @@ def test_group(test_group_name, test_functions, test_filenames, answer_filename=
         test_answers = [None] * test_amount
     print(f'Группа тестов: {test_group_name}')
     if len(test_answers) != test_amount:
-        raise TestingSuiteError('Количество ответов не совпадает с количеством файлов')
+        raise TestingSuiteError('Количество ответов не совпадает с количеством файлов входных данных')
+    if len(test_functions) != test_amount:
+        raise TestingSuiteError('Количество тестов не совпадает с количеством файлов входных данных')
     for i, f in enumerate(test_filenames):
-        test(test_functions[i], i + 1, test_filenames[i], test_answers[i])
+        test(i + 1, test_functions[i], test_filenames[i], test_answers[i])
     print(f'{test_group_name}: тесты ' + ('успешны' if answer_filename is not None else 'выполнены'))
     print()
 

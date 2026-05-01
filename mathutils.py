@@ -29,6 +29,7 @@ def multiply_row(row, c):
     """
     return [c * e for e in row]
 
+
 def add_rows(row1, row2):
     """
     Складывает две строки (два одномерных массива) поэлементно.
@@ -38,6 +39,17 @@ def add_rows(row1, row2):
     """
     return [row1[i] + row2[i] for i in range(max(len(row1), len(row2)))]
 
+
+def scalar_multiply(row1, row2):
+    """
+    Вычисляет скалярное произведение двух одномерных массивов.
+    :param row1: Первый одномерный массив.
+    :param row2: Второй одномерный массив.
+    :return: Скалярное произведение.
+    """
+    return sum(row1[i] * row2[i] for i in range(max(len(row1), len(row2))))
+
+
 def strf(x):
     """
     Красиво выводит числа с плавающей точкой. Старается выводить максимальное возможное количество знаков после запятой.
@@ -46,6 +58,7 @@ def strf(x):
     :return: Отформатированная строка.
     """
     return f'{x:g}'
+
 
 def is_zeroes(row):
     """

@@ -14,7 +14,9 @@ def except_hook(cls, exception, traceback):
 
 
 class Window(QMainWindow):
-    input_matrix_widget: QTableWidget
+    left_input_matrix_widget: QTableWidget
+    right_input_matrix_widget: QTableWidget
+    output_matrix_widget: QTableWidget
     calc_det_button: QPushButton
     solve_cramer_button: QPushButton
     solve_gauss_button: QPushButton
@@ -28,11 +30,11 @@ class Window(QMainWindow):
         super().__init__()
         uic.loadUi('form.ui', self)
         self.status_widget.setText('Здесь появится результат вычислений')
-        self.input_matrix_widget.setRowCount(1)
-        self.input_matrix_widget.setColumnCount(1)
+        self.left_input_matrix_widget.setRowCount(1)
+        self.left_input_matrix_widget.setColumnCount(1)
         self.row_count = 1
         self.column_count = 1
-        self.input_matrix_widget.cellChanged.connect(self.update_table)
+        self.left_input_matrix_widget.cellChanged.connect(self.update_table)
         self.calc_det_button.clicked.connect(self.calc_det)
         self.solve_cramer_button.clicked.connect(self.solve_cramer)
         self.solve_gauss_button.clicked.connect(self.solve_gauss)
@@ -46,45 +48,45 @@ class Window(QMainWindow):
         :param c: Столбец ячейки.
         :return: True, если ячейка пустая; False, если ячейка непустая.
         """
-        return self.input_matrix_widget.item(r, c) is None or self.input_matrix_widget.item(r, c).text().strip() != ""
+        return self.left_input_matrix_widget.item(r, c) is None or self.left_input_matrix_widget.item(r, c).text().strip() != ""
 
     def add_row(self):
         """
         Добавляет строку в таблицу ввода.
         """
-        self.input_matrix_widget.setRowCount(self.row_count + 1)
+        self.left_input_matrix_widget.setRowCount(self.row_count + 1)
         self.row_count += 1
         for c in range(self.column_count):
-            self.input_matrix_widget.setItem(self.row_count - 1, c, QTableWidgetItem(""))
+            self.left_input_matrix_widget.setItem(self.row_count - 1, c, QTableWidgetItem(""))
 
     def add_column(self):
         """
         Добавляет столбец в таблицу ввода.
         """
-        self.input_matrix_widget.setColumnCount(self.column_count + 1)
+        self.left_input_matrix_widget.setColumnCount(self.column_count + 1)
         self.column_count += 1
         for r in range(self.row_count):
-            self.input_matrix_widget.setItem(r, self.column_count - 1, QTableWidgetItem(""))
+            self.left_input_matrix_widget.setItem(r, self.column_count - 1, QTableWidgetItem(""))
 
     def remove_row(self):
         """
         Удаляет строку из таблицы ввода.
         """
-        self.input_matrix_widget.setRowCount(self.row_count - 1)
+        self.left_input_matrix_widget.setRowCount(self.row_count - 1)
         self.row_count -= 1
 
     def remove_column(self):
         """
         Удаляет столбец из таблицы ввода.
         """
-        self.input_matrix_widget.setColumnCount(self.column_count - 1)
+        self.left_input_matrix_widget.setColumnCount(self.column_count - 1)
         self.column_count -= 1
 
     def update_table(self):
         """
         Данный метод вызывается каждый раз, когда пользователь обновляет значение ячейки в таблице ввода.
         """
-        self.input_matrix_widget.blockSignals(True)
+        self.left_input_matrix_widget.blockSignals(True)
         for c in range(self.column_count):
             if self.is_item_empty(self.row_count - 1, c):
                 self.add_row()
@@ -105,7 +107,7 @@ class Window(QMainWindow):
                 can_delete_column = False
         if can_delete_column:
             self.remove_column()
-        self.input_matrix_widget.blockSignals(False)
+        self.left_input_matrix_widget.blockSignals(False)
 
     def calc_det(self):
         """
@@ -189,17 +191,17 @@ class Window(QMainWindow):
             self.status_widget.setText('Не получилось прочитать файл')
 
     def write_matrix_into_table(self, matrix: list[Any]):
-        self.input_matrix_widget.blockSignals(True)
-        self.input_matrix_widget.setRowCount(0)
-        self.input_matrix_widget.setColumnCount(0)
-        self.input_matrix_widget.setRowCount(len(matrix) + 1)
-        self.input_matrix_widget.setColumnCount(len(matrix[0]) + 1)
+        self.left_input_matrix_widget.blockSignals(True)
+        self.left_input_matrix_widget.setRowCount(0)
+        self.left_input_matrix_widget.setColumnCount(0)
+        self.left_input_matrix_widget.setRowCount(len(matrix) + 1)
+        self.left_input_matrix_widget.setColumnCount(len(matrix[0]) + 1)
         self.row_count = len(matrix) + 1
         self.column_count = len(matrix[0]) + 1
         for r in range(len(matrix)):
             for c in range(len(matrix[0])):
-                self.input_matrix_widget.setItem(r, c, QTableWidgetItem(str(matrix[r][c])))
-        self.input_matrix_widget.blockSignals(False)
+                self.left_input_matrix_widget.setItem(r, c, QTableWidgetItem(str(matrix[r][c])))
+        self.left_input_matrix_widget.blockSignals(False)
 
     def get_matrix_from_table(self):
         """
@@ -211,7 +213,7 @@ class Window(QMainWindow):
             for r in range(self.row_count - 1):
                 row = []
                 for c in range(self.column_count - 1):
-                    text = self.input_matrix_widget.item(r, c).text()
+                    text = self.left_input_matrix_widget.item(r, c).text()
                     row.append(float(text) if text else 0)
                 elements.append(row)
         except ValueError:

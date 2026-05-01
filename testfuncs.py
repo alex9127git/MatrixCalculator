@@ -9,7 +9,10 @@ TEST_FUNCS = [
         lambda filename: Matrix(read_matrix_from_file(filename)).get_row(2),
         lambda filename: Matrix(read_matrix_from_file(filename)).get_col(3),
         lambda filename: Matrix(read_matrix_from_file(filename)).beautify_gauss(),
-        lambda filename: Matrix(read_matrix_from_file(filename)).swap_rows(0, 1)
+        lambda filename: Matrix(read_matrix_from_file(filename)).swap_rows(0, 1),
+        lambda filename: Matrix(read_matrix_from_file(filename)).transpose(),
+        lambda filename: Matrix(read_matrix_from_file(filename)).get_inverse(),
+        lambda filename: (m := Matrix(read_matrix_from_file(filename))) * m.get_inverse()
     ],
     [
         lambda filename: Matrix(read_matrix_from_file(filename)).det()

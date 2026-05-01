@@ -1,3 +1,4 @@
+import mathutils
 from mathutils import float_equals, multiply_row, add_rows, strf, is_zeroes
 
 
@@ -21,22 +22,6 @@ class Matrix:
             result += '\t'.join(map(strf, row))
             result += '\n'
         return result.strip()
-
-    def __eq__(self, other):
-        if type(other) != Matrix:
-            return False
-        if self.row_count != other.row_count:
-            return False
-        if self.column_count != other.column_count:
-            return False
-        for r in range(self.row_count):
-            for c in range(self.column_count):
-                if not float_equals(self.elements[r][c], other.elements[r][c]):
-                    return False
-        return True
-
-    def __ne__(self, other):
-        return not (self == other)
 
     def det(self):
         """
@@ -200,6 +185,58 @@ class Matrix:
                     solution.insert(0, row[-1] / row[r])
         return solution
 
+    def transpose(self):
+        """
+        Транспонирует матрицу, отражая её относительно главной диагонали так, что строки становятся столбцами,
+        а столбцы - строками.
+        :return: Транспонированная матрица.
+        """
+        submatrix = []
+        for col in range(self.column_count):
+            new_row = []
+            for row in range(self.row_count):
+                new_row.append(self.elements[row][col])
+            submatrix.append(new_row)
+        return Matrix(submatrix)
+
+
+    def get_minor(self, row, col):
+        """
+        Вычисляет конкретный минор матрицы.
+        :param row: Строка для удаления.
+        :param col: Столбец для удаления.
+        :return: Значение минора.
+        """
+        s = self.remove_row(row).remove_col(col)
+        return s.det()
+
+    def get_cofactor(self, row, col):
+        """
+        Вычисляет конкретное алгебраическое дополнение матрицы.
+        :param row: Строка для удаления.
+        :param col: Столбец для удаления.
+        :return: Значение алгебраического дополнения.
+        """
+        return ((-1) ** (row + col + 2)) * self.get_minor(row, col)
+
+    def get_adjugate(self):
+        """
+        Вычисляет присоединённую матрицу (матрицу, составленную из алгебраических дополнений своих элементов.
+        :return: Присоединённая матрица.
+        """
+        result = []
+        for row in range(self.row_count):
+            new_row = []
+            for col in range(self.column_count):
+                new_row.append(self.get_cofactor(row, col))
+            result.append(new_row)
+        return Matrix(result)
+
+    def get_inverse(self):
+        if self.det() == 0:
+            raise ValueError('Обратной матрицы не существует, определитель равен нулю')
+        return self.get_adjugate().transpose() * (1 / self.det())
+
     def get_row(self, r) -> list[float]:
         """
         Возвращает строку матрицы по индексу r.
@@ -283,3 +320,44 @@ class Matrix:
         row1 = self.get_row(r1)
         row2 = self.get_row(r2)
         return self.replace_row(row2, r1).replace_row(row1, r2)
+
+    def __eq__(self, other):
+        if type(other) != Matrix:
+            return False
+        if self.row_count != other.row_count:
+            return False
+        if self.column_count != other.column_count:
+            return False
+        for r in range(self.row_count):
+            for c in range(self.column_count):
+                if not float_equals(self.elements[r][c], other.elements[r][c]):
+                    return False
+        return True
+
+    def __ne__(self, other):
+        return not (self == other)
+
+    def __mul__(self, other):
+        if type(other) == int or type(other) == float:
+            elements = []
+            for row in self.elements:
+                new_row = []
+                for elem in row:
+                    new_row.append(elem * other)
+                elements.append(new_row)
+            return Matrix(elements)
+        elif type(other) == Matrix:
+            if self.column_count != other.row_count:
+                raise ValueError(
+                    'Количество столбцов первой матрицы должно совпадать с количеством строк второй матрицы')
+            elements = []
+            rows = [self.get_row(r) for r in range(self.row_count)]
+            columns = [other.get_col(c) for c in range(other.column_count)]
+            for row in range(self.row_count):
+                new_row = []
+                for col in range(self.column_count):
+                    new_row.append(mathutils.scalar_multiply(rows[row], columns[col]))
+                elements.append(new_row)
+            return Matrix(elements)
+        else:
+            raise TypeError('Можно умножить матрицу только на число или на другую матрицу')

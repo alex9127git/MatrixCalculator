@@ -19,12 +19,12 @@
      <rect>
       <x>10</x>
       <y>600</y>
-      <width>581</width>
+      <width>381</width>
       <height>31</height>
      </rect>
     </property>
     <property name="text">
-     <string>Прочитать матрицу из файла (результат будет записан в Входную матрицу 1)</string>
+     <string>Прочитать Входную матрицу 1 из файла</string>
     </property>
    </widget>
    <widget class="QTextEdit" name="status_widget">
@@ -105,8 +105,17 @@
      <attribute name="horizontalHeaderVisible">
       <bool>false</bool>
      </attribute>
+     <attribute name="horizontalHeaderMinimumSectionSize">
+      <number>32</number>
+     </attribute>
+     <attribute name="horizontalHeaderDefaultSectionSize">
+      <number>32</number>
+     </attribute>
      <attribute name="verticalHeaderVisible">
       <bool>false</bool>
+     </attribute>
+     <attribute name="verticalHeaderMinimumSectionSize">
+      <number>32</number>
      </attribute>
     </widget>
    </widget>
@@ -123,6 +132,9 @@
      <string>Выходная матрица</string>
     </property>
     <widget class="QTableWidget" name="output_matrix_widget">
+     <property name="enabled">
+      <bool>true</bool>
+     </property>
      <property name="geometry">
       <rect>
        <x>0</x>
@@ -134,17 +146,26 @@
      <attribute name="horizontalHeaderVisible">
       <bool>false</bool>
      </attribute>
+     <attribute name="horizontalHeaderMinimumSectionSize">
+      <number>32</number>
+     </attribute>
+     <attribute name="horizontalHeaderDefaultSectionSize">
+      <number>32</number>
+     </attribute>
      <attribute name="verticalHeaderVisible">
       <bool>false</bool>
+     </attribute>
+     <attribute name="verticalHeaderMinimumSectionSize">
+      <number>32</number>
      </attribute>
     </widget>
    </widget>
    <widget class="QPushButton" name="write_matrix_button">
     <property name="geometry">
      <rect>
-      <x>610</x>
+      <x>810</x>
       <y>600</y>
-      <width>581</width>
+      <width>381</width>
       <height>31</height>
      </rect>
     </property>
@@ -191,7 +212,7 @@
      <string>Решить систему уравнений методом Крамера</string>
     </property>
    </widget>
-   <widget class="QPushButton" name="pushButton">
+   <widget class="QPushButton" name="toggle_input_button">
     <property name="geometry">
      <rect>
       <x>610</x>
@@ -204,7 +225,7 @@
      <string>Использовать Входную матрицу 2</string>
     </property>
    </widget>
-   <widget class="QPushButton" name="pushButton_2">
+   <widget class="QPushButton" name="switch_inputs_button">
     <property name="geometry">
      <rect>
       <x>380</x>
@@ -217,7 +238,7 @@
      <string>⇄</string>
     </property>
    </widget>
-   <widget class="QLabel" name="label">
+   <widget class="QLabel" name="current_input_label">
     <property name="geometry">
      <rect>
       <x>10</x>
@@ -280,6 +301,19 @@
     </property>
     <property name="text">
      <string>Рассчитать произведение Входной матрицы 1 и Входной матрицы 2</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="reuse_matrix_button">
+    <property name="geometry">
+     <rect>
+      <x>410</x>
+      <y>600</y>
+      <width>381</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Записать Выходную матрицу в Входную матрицу 1</string>
     </property>
    </widget>
   </widget>

@@ -182,7 +182,7 @@ class Matrix:
                         expr += f' {'+' if coef < 0 else '-'} {strf(abs(coef)) + ' ' if abs(coef) != 1 else ''}x{i+1}'
                     solution.insert(0, expr)
                 else:
-                    solution.insert(0, row[-1] / row[r])
+                    solution.insert(0, strf(row[-1] / row[r]))
         return solution
 
     def transpose(self):
@@ -235,6 +235,8 @@ class Matrix:
     def get_inverse(self):
         if self.det() == 0:
             raise ValueError('Обратной матрицы не существует, определитель равен нулю')
+        if self.row_count != self.column_count:
+            raise ValueError('Обратной матрицы не существует, матрица не является квадратной')
         return self.get_adjugate().transpose() * (1 / self.det())
 
     def get_row(self, r) -> list[float]:
@@ -355,7 +357,7 @@ class Matrix:
             columns = [other.get_col(c) for c in range(other.column_count)]
             for row in range(self.row_count):
                 new_row = []
-                for col in range(self.column_count):
+                for col in range(other.column_count):
                     new_row.append(mathutils.scalar_multiply(rows[row], columns[col]))
                 elements.append(new_row)
             return Matrix(elements)

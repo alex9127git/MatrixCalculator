@@ -13,7 +13,7 @@
   <property name="windowTitle">
    <string>Калькулятор матриц</string>
   </property>
-  <widget class="QWidget" name="centralwidget">
+  <widget class="QWidget" name="centralWidget">
    <widget class="QPushButton" name="read_matrix_button">
     <property name="geometry">
      <rect>

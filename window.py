@@ -25,8 +25,9 @@ class Window(QMainWindow):
     switch_inputs_button: QPushButton
     current_input_label: QLabel
     status_widget: QTextEdit
-    active_table: int
+    active_id: int
     gauss_warning_displayed: bool
+    data: list[Matrix]
 
     def __init__(self):
         super().__init__()
@@ -36,7 +37,7 @@ class Window(QMainWindow):
         self.left_input_matrix_widget.setColumnCount(1)
         self.right_input_matrix_widget.setRowCount(1)
         self.right_input_matrix_widget.setColumnCount(1)
-        self.is_left_active = True
+        self.active_id = 0
         self.left_input_matrix_widget.cellChanged.connect(self.update_left_table)
         self.right_input_matrix_widget.cellChanged.connect(self.update_right_table)
         self.calc_det_button.clicked.connect(self.calc_det)
@@ -50,26 +51,25 @@ class Window(QMainWindow):
         self.reuse_matrix_button.clicked.connect(self.copy_output_to_active)
         self.switch_inputs_button.clicked.connect(self.swap_inputs)
         self.gauss_warning_displayed = False
+        self.data = [Matrix(), Matrix(), Matrix()]
 
     def get_active_table(self):
         """
-        Возвращает активную таблицу.
-        :return: Левая таблица, если self.is_left_active = True, иначе правая таблица.
+        :return: Активная таблица.
         """
-        return self.left_input_matrix_widget if self.is_left_active else self.right_input_matrix_widget
+        return self.left_input_matrix_widget if self.active_id == 0 else self.right_input_matrix_widget
 
     def toggle_input_matrix(self):
         """
         Переключает активную матрицу ввода.
         """
-        self.is_left_active = not self.is_left_active
-        active_id = 1 if self.is_left_active else 2
-        other_id = 2 if self.is_left_active else 1
+        self.active_id = (self.active_id + 1) % 2
+        other_id = (self.active_id + 1) % 2
         self.current_input_label.setText(
-            f'Следующие операции принимают Входную матрицу {active_id} в качестве входных данных')
-        self.toggle_input_button.setText(f'Использовать Входную матрицу {other_id}')
-        self.read_matrix_button.setText(f'Прочитать Входную матрицу {active_id} из файла')
-        self.reuse_matrix_button.setText(f'Записать Выходную матрицу в Входную матрицу {active_id}')
+            f'Следующие операции принимают Входную матрицу {self.active_id + 1} в качестве входных данных')
+        self.toggle_input_button.setText(f'Использовать Входную матрицу {other_id + 1}')
+        self.read_matrix_button.setText(f'Прочитать Входную матрицу {self.active_id + 1} из файла')
+        self.reuse_matrix_button.setText(f'Записать Выходную матрицу в Входную матрицу {self.active_id + 1}')
 
     def swap_inputs(self):
         matrix1 = self.get_matrix_from_table(self.left_input_matrix_widget)
@@ -82,15 +82,15 @@ class Window(QMainWindow):
         self.write_matrix_into_table(self.get_active_table(), output)
 
     @staticmethod
-    def is_item_empty(table, r, c):
+    def item_exists(table, r, c):
         """
-        Проверяет, что ячейка таблицы ввода с данными координатами не имеет содержимого.
+        Проверяет, что ячейка таблицы ввода с данными координатами имеет содержимое.
         :param table: Таблица.
         :param r: Строка ячейки.
         :param c: Столбец ячейки.
-        :return: True, если ячейка пустая; False, если ячейка непустая.
+        :return: True, если ячейка непустая; False, если ячейка пустая.
         """
-        return table.item(r, c) is None or table.item(r, c).text().strip() != ""
+        return table.item(r, c).text().strip() != ""
 
     @staticmethod
     def add_row(table: QTableWidget):
@@ -128,40 +128,54 @@ class Window(QMainWindow):
         """
         table.setColumnCount(table.columnCount() - 1)
 
-    def update_table(self, table: QTableWidget):
+    def update_table(self, t_id: int, row: int, col: int):
         """
         Данный метод вызывается каждый раз, когда пользователь обновляет значение ячейки в таблице ввода.
         """
+        table = [self.left_input_matrix_widget, self.right_input_matrix_widget, self.output_matrix_widget][t_id]
         table.blockSignals(True)
+        value = float(table.item(row, col).text()) if self.item_exists(table, row, col) else 0
+        matrix = self.data[t_id]
+        if row >= matrix.row_count:
+            matrix = matrix.append_row()
+        if col >= matrix.column_count:
+            matrix = matrix.append_col()
+        matrix = matrix.replace_val(row, col, value)
         for c in range(table.columnCount()):
-            if self.is_item_empty(table, table.rowCount() - 1, c):
+            if self.item_exists(table, table.rowCount() - 1, c):
                 self.add_row(table)
                 break
         for r in range(table.rowCount()):
-            if self.is_item_empty(table, r, table.columnCount() - 1):
+            if self.item_exists(table, r, table.columnCount() - 1):
                 self.add_column(table)
                 break
         can_delete_row = True
-        for c in range(table.columnCount()):
-            if (self.is_item_empty(table, table.rowCount() - 2, c) or
-                    self.is_item_empty(table, table.rowCount() - 1, c)):
-                can_delete_row = False
-        if can_delete_row:
-            self.remove_row(table)
+        while can_delete_row and table.rowCount() > 1:
+            for c in range(table.columnCount()):
+                if (self.item_exists(table, table.rowCount() - 2, c) or
+                        self.item_exists(table, table.rowCount() - 1, c)):
+                    can_delete_row = False
+            if can_delete_row:
+                self.remove_row(table)
+                matrix = matrix.remove_row(matrix.row_count - 1)
         can_delete_column = True
-        for r in range(table.rowCount()):
-            if (self.is_item_empty(table, r, table.columnCount() - 2) or
-                    self.is_item_empty(table, r, table.columnCount() - 1)):
-                can_delete_column = False
-        if can_delete_column:
-            self.remove_column(table)
+        while can_delete_column and table.columnCount() > 1:
+            for r in range(table.rowCount()):
+                if (self.item_exists(table, r, table.columnCount() - 2) or
+                        self.item_exists(table, r, table.columnCount() - 1)):
+                    can_delete_column = False
+            if can_delete_column:
+                self.remove_column(table)
+                matrix = matrix.remove_col(matrix.column_count - 1)
+        self.data[t_id] = matrix
+        print(self.data[t_id])
         table.blockSignals(False)
 
-    def update_left_table(self):
-        self.update_table(self.left_input_matrix_widget)
+    def update_left_table(self, row, col):
+        self.update_table(0, row, col)
 
-    def update_right_table(self):
-        self.update_table(self.right_input_matrix_widget)
+    def update_right_table(self, row, col):
+        self.update_table(1, row, col)
 
     def calc_det(self):
         """

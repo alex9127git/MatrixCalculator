@@ -7,14 +7,22 @@ class Matrix:
     row_count: int
     column_count: int
 
-    def __init__(self, elements):
+    def __init__(self, elements=None):
+        if elements is None:
+            self.row_count = 0
+            self.column_count = 0
+            self.elements = []
+            return
         self.elements = elements
         self.row_count = len(elements)
         if self.row_count == 0:
-            raise ValueError('Матрица не имеет ни одной строки')
+            self.column_count = 0
+            self.elements = []
+            return
         self.column_count = len(elements[0])
         if self.column_count == 0:
-            raise ValueError('Матрица не имеет ни одного столбца')
+            self.row_count = 0
+            self.elements = []
 
     def __str__(self):
         result = ''
@@ -22,6 +30,9 @@ class Matrix:
             result += '\t'.join(map(strf, row))
             result += '\n'
         return result.strip()
+
+    def is_empty(self):
+        return self.row_count == 0 or self.column_count == 0
 
     def det(self):
         """
@@ -47,7 +58,9 @@ class Matrix:
             return cache[bitmask], cache
         if self.row_count != self.column_count:
             raise ValueError('Определитель матрицы не имеет смысл для матрицы, не являющейся квадратной')
-        if size == 1:
+        if size == 0:
+            raise ValueError('Матрица пуста')
+        elif size == 1:
             return self.elements[0][0], cache
         elif size == 2:
             value = self.elements[0][0] * self.elements[1][1] - self.elements[0][1] * self.elements[1][0]
@@ -70,6 +83,8 @@ class Matrix:
         Сложность алгоритма = O(n*2^n), где n - количество строк матрицы.
         :return: Список корней системы линейных уравнений.
         """
+        if self.is_empty():
+            raise ValueError('Матрица пуста')
         if (self.row_count + 1) > self.column_count:
             raise ValueError(f'Слишком много уравнений для системы с {self.column_count - 1} неизвестными')
         if (self.row_count + 1) < self.column_count:
@@ -161,6 +176,8 @@ class Matrix:
         Считает корни системы линейных уравнений, представленной этой матрицей, методом Гаусса.
         :return: Список корней системы линейных уравнений.
         """
+        if self.is_empty():
+            raise ValueError('Матрица пуста')
         diag = self.convert_to_diag()
         solution = []
         solution_undefined = False
@@ -221,7 +238,7 @@ class Matrix:
 
     def get_adjugate(self):
         """
-        Вычисляет присоединённую матрицу (матрицу, составленную из алгебраических дополнений своих элементов.
+        Вычисляет присоединённую матрицу (матрицу, составленную из алгебраических дополнений своих элементов).
         :return: Присоединённая матрица.
         """
         result = []
@@ -261,6 +278,8 @@ class Matrix:
         :param r: Индекс строки, которую нужно удалить.
         :return: Изменённая матрица.
         """
+        if self.row_count == 1 and r == 0:
+            return Matrix()
         return Matrix([self.elements[i] for i in range(self.row_count) if i != r])
 
     def remove_col(self, c):
@@ -269,7 +288,39 @@ class Matrix:
         :param c: Индекс строки, которую нужно удалить.
         :return: Изменённая матрица.
         """
+        if self.column_count == 1 and c == 0:
+            return Matrix()
         return Matrix([self.elements[i][:c] + self.elements[i][c+1:] for i in range(self.row_count)])
+
+    def append_row(self):
+        """
+        Добавляет строку в конец матрицы.
+        :return: Изменённая матрица.
+        """
+        if self.is_empty():
+            return Matrix([[0]])
+        return self.insert_row([0] * self.column_count, self.row_count)
+
+    def append_col(self):
+        """
+        Добавляет столбец в конец матрицы.
+        :return: Изменённая матрица.
+        """
+        if self.is_empty():
+            return Matrix([[0]])
+        return self.insert_col([0] * self.row_count, self.column_count)
+
+    def replace_val(self, row: int, col: int, value: float):
+        """
+        Заменяет значение по индексу строки и столбца на новое.
+        :param row: Индекс строки.
+        :param col: Индекс столбца.
+        :param value: Новое значение.
+        :return: Изменённая матрица.
+        """
+        submatrix = self.elements
+        submatrix[row][col] = value
+        return Matrix(submatrix)
 
     def insert_row(self, row: list[float], r: int):
         """
@@ -289,7 +340,10 @@ class Matrix:
         :param c: Индекс, куда будет вставлен столбец.
         :return: Изменённая матрица.
         """
-        submatrix = self.elements
+        if self.is_empty():
+            submatrix = [[] for _ in range(self.row_count)]
+        else:
+            submatrix = self.elements
         for i in range(self.row_count):
             submatrix[i].insert(c, col[i])
         return Matrix(submatrix)

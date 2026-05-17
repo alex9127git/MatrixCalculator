@@ -1,3 +1,5 @@
+import math
+
 import mathutils
 from mathutils import float_equals, multiply_row, add_rows, strf, is_zeroes
 
@@ -34,6 +36,13 @@ class Matrix:
     def is_empty(self):
         return self.row_count == 0 or self.column_count == 0
 
+    def has_nan(self):
+        for row in self.elements:
+            for elem in row:
+                if math.isnan(elem):
+                    return True
+        return False
+
     def det(self):
         """
         Считает определитель квадратной матрицы рекурсивным способом с использованием кэширования.
@@ -58,7 +67,9 @@ class Matrix:
             return cache[bitmask], cache
         if self.row_count != self.column_count:
             raise ValueError('Определитель матрицы не имеет смысл для матрицы, не являющейся квадратной')
-        if size == 0:
+        if self.has_nan():
+            raise ValueError('Матрица имеет пустые ячейки')
+        if self.is_empty():
             raise ValueError('Матрица пуста')
         elif size == 1:
             return self.elements[0][0], cache
@@ -85,6 +96,8 @@ class Matrix:
         """
         if self.is_empty():
             raise ValueError('Матрица пуста')
+        if self.has_nan():
+            raise ValueError('Матрица имеет пустые ячейки')
         if (self.row_count + 1) > self.column_count:
             raise ValueError(f'Слишком много уравнений для системы с {self.column_count - 1} неизвестными')
         if (self.row_count + 1) < self.column_count:
@@ -178,6 +191,8 @@ class Matrix:
         """
         if self.is_empty():
             raise ValueError('Матрица пуста')
+        if self.has_nan():
+            raise ValueError('Матрица имеет пустые ячейки')
         diag = self.convert_to_diag()
         solution = []
         solution_undefined = False
@@ -250,6 +265,8 @@ class Matrix:
         return Matrix(result)
 
     def get_inverse(self):
+        if self.has_nan():
+            raise ValueError('Матрица имеет пустые ячейки')
         if self.det() == 0:
             raise ValueError('Обратной матрицы не существует, определитель равен нулю')
         if self.row_count != self.column_count:
@@ -298,8 +315,8 @@ class Matrix:
         :return: Изменённая матрица.
         """
         if self.is_empty():
-            return Matrix([[0]])
-        return self.insert_row([0] * self.column_count, self.row_count)
+            return Matrix([[math.nan]])
+        return self.insert_row([math.nan] * self.column_count, self.row_count)
 
     def append_col(self):
         """
@@ -307,8 +324,8 @@ class Matrix:
         :return: Изменённая матрица.
         """
         if self.is_empty():
-            return Matrix([[0]])
-        return self.insert_col([0] * self.row_count, self.column_count)
+            return Matrix([[math.nan]])
+        return self.insert_col([math.nan] * self.row_count, self.column_count)
 
     def replace_val(self, row: int, col: int, value: float):
         """

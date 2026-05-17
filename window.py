@@ -1,4 +1,6 @@
-from typing import Any
+import math
+import traceback
+
 from PyQt5 import uic
 from PyQt5.QtGui import QColor
 from PyQt5.QtWidgets import QMainWindow, QTableWidget, QPushButton, QTextEdit, QTableWidgetItem, QFileDialog, QLabel
@@ -72,14 +74,14 @@ class Window(QMainWindow):
         self.reuse_matrix_button.setText(f'Записать Выходную матрицу в Входную матрицу {self.active_id + 1}')
 
     def swap_inputs(self):
-        matrix1 = self.get_matrix_from_table(self.left_input_matrix_widget)
-        matrix2 = self.get_matrix_from_table(self.right_input_matrix_widget)
-        self.write_matrix_into_table(self.left_input_matrix_widget, matrix2)
-        self.write_matrix_into_table(self.right_input_matrix_widget, matrix1)
+        matrix1 = self.get_matrix_from_table(0)
+        matrix2 = self.get_matrix_from_table(1)
+        self.write_matrix_into_table(0, matrix2)
+        self.write_matrix_into_table(1, matrix1)
 
     def copy_output_to_active(self):
-        output = self.get_matrix_from_table(self.output_matrix_widget)
-        self.write_matrix_into_table(self.get_active_table(), output)
+        output = self.get_matrix_from_table(2)
+        self.write_matrix_into_table(self.active_id, output)
 
     @staticmethod
     def item_exists(table, r, c):
@@ -134,42 +136,46 @@ class Window(QMainWindow):
         """
         table = [self.left_input_matrix_widget, self.right_input_matrix_widget, self.output_matrix_widget][t_id]
         table.blockSignals(True)
-        value = float(table.item(row, col).text()) if self.item_exists(table, row, col) else 0
         matrix = self.data[t_id]
-        if row >= matrix.row_count:
-            matrix = matrix.append_row()
-        if col >= matrix.column_count:
-            matrix = matrix.append_col()
-        matrix = matrix.replace_val(row, col, value)
-        for c in range(table.columnCount()):
-            if self.item_exists(table, table.rowCount() - 1, c):
-                self.add_row(table)
-                break
-        for r in range(table.rowCount()):
-            if self.item_exists(table, r, table.columnCount() - 1):
-                self.add_column(table)
-                break
-        can_delete_row = True
-        while can_delete_row and table.rowCount() > 1:
+        try:
+            value = float(table.item(row, col).text()) if self.item_exists(table, row, col) else math.nan
+            if row >= matrix.row_count:
+                matrix = matrix.append_row()
+            if col >= matrix.column_count:
+                matrix = matrix.append_col()
+            matrix = matrix.replace_val(row, col, value)
             for c in range(table.columnCount()):
-                if (self.item_exists(table, table.rowCount() - 2, c) or
-                        self.item_exists(table, table.rowCount() - 1, c)):
-                    can_delete_row = False
-            if can_delete_row:
-                self.remove_row(table)
-                matrix = matrix.remove_row(matrix.row_count - 1)
-        can_delete_column = True
-        while can_delete_column and table.columnCount() > 1:
+                if self.item_exists(table, table.rowCount() - 1, c):
+                    self.add_row(table)
+                    break
             for r in range(table.rowCount()):
-                if (self.item_exists(table, r, table.columnCount() - 2) or
-                        self.item_exists(table, r, table.columnCount() - 1)):
-                    can_delete_column = False
-            if can_delete_column:
-                self.remove_column(table)
-                matrix = matrix.remove_col(matrix.column_count - 1)
-        self.data[t_id] = matrix
-        print(self.data[t_id])
-        table.blockSignals(False)
+                if self.item_exists(table, r, table.columnCount() - 1):
+                    self.add_column(table)
+                    break
+            can_delete_row = True
+            while can_delete_row and table.rowCount() > 1:
+                for c in range(table.columnCount()):
+                    if (self.item_exists(table, table.rowCount() - 2, c) or
+                            self.item_exists(table, table.rowCount() - 1, c)):
+                        can_delete_row = False
+                if can_delete_row:
+                    self.remove_row(table)
+                    matrix = matrix.remove_row(matrix.row_count - 1)
+            can_delete_column = True
+            while can_delete_column and table.columnCount() > 1:
+                for r in range(table.rowCount()):
+                    if (self.item_exists(table, r, table.columnCount() - 2) or
+                            self.item_exists(table, r, table.columnCount() - 1)):
+                        can_delete_column = False
+                if can_delete_column:
+                    self.remove_column(table)
+                    matrix = matrix.remove_col(matrix.column_count - 1)
+            self.data[t_id] = matrix
+        except ValueError:
+            table.setItem(row, col, QTableWidgetItem(str(matrix.elements[row][col])))
+        finally:
+            table.blockSignals(False)
+            self.sync()
 
     def update_left_table(self, row, col):
         self.update_table(0, row, col)
@@ -183,12 +189,11 @@ class Window(QMainWindow):
         """
         self.status_widget.setText('Выполняется...')
         self.status_widget.repaint()
-        elements = self.get_matrix_from_table(self.get_active_table())
-        if elements is None:
+        matrix = self.get_matrix_from_table(self.active_id)
+        if matrix.is_empty():
             self.status_widget.setText('Входная матрица пустая')
             return
         try:
-            matrix = Matrix(elements)
             result = matrix.det()
             self.status_widget.setText(f'Определитель матрицы = {strf(result)}')
         except ValueError as e:
@@ -197,14 +202,13 @@ class Window(QMainWindow):
     def calc_invert(self):
         self.status_widget.setText('Выполняется...')
         self.status_widget.repaint()
-        elements = self.get_matrix_from_table(self.get_active_table())
-        if elements is None:
+        matrix = self.get_matrix_from_table(self.active_id)
+        if matrix.is_empty():
             self.status_widget.setText('Входная матрица пустая')
             return
         try:
-            matrix = Matrix(elements)
             inverted_matrix = matrix.get_inverse()
-            self.write_matrix_into_table(self.output_matrix_widget, inverted_matrix.elements)
+            self.write_matrix_into_table(2, inverted_matrix)
             self.status_widget.setText('Обратная матрица выведена на экран')
         except ValueError as e:
             self.status_widget.setText(str(e))
@@ -212,16 +216,14 @@ class Window(QMainWindow):
     def calc_product(self):
         self.status_widget.setText('Выполняется...')
         self.status_widget.repaint()
-        elements1 = self.get_matrix_from_table(self.left_input_matrix_widget)
-        elements2 = self.get_matrix_from_table(self.right_input_matrix_widget)
-        if elements1 is None or elements2 is None:
+        matrix1 = self.get_matrix_from_table(0)
+        matrix2 = self.get_matrix_from_table(1)
+        if matrix1.is_empty() or matrix2.is_empty():
             self.status_widget.setText('Одна из входных матриц пустая')
             return
         try:
-            matrix1 = Matrix(elements1)
-            matrix2 = Matrix(elements2)
             product = matrix1 * matrix2
-            self.write_matrix_into_table(self.output_matrix_widget, product.elements)
+            self.write_matrix_into_table(2, product)
             self.status_widget.setText('Произведение матриц выведено на экран')
         except ValueError as e:
             self.status_widget.setText(str(e))
@@ -232,12 +234,11 @@ class Window(QMainWindow):
         """
         self.status_widget.setText('Выполняется...')
         self.status_widget.repaint()
-        elements = self.get_matrix_from_table(self.get_active_table())
-        if elements is None:
+        matrix = self.get_matrix_from_table(self.active_id)
+        if matrix.is_empty():
             self.status_widget.setText('Входная матрица пустая')
             return
         try:
-            matrix = Matrix(elements)
             result = matrix.solve_cramer()
             status_string = 'Система имеет решение:\n'
             for i, x in enumerate(result):
@@ -254,12 +255,11 @@ class Window(QMainWindow):
         """
         self.status_widget.setText('Выполняется...')
         self.status_widget.repaint()
-        elements = self.get_matrix_from_table(self.get_active_table())
-        if elements is None:
+        matrix = self.get_matrix_from_table(self.active_id)
+        if matrix.is_empty():
             self.status_widget.setText('Входная матрица пустая')
             return
         try:
-            matrix = Matrix(elements)
             if matrix.beautify_gauss() != matrix and not self.gauss_warning_displayed:
                 self.gauss_warning_displayed = True
                 status_string = ('Матрица имеет неиспользуемые неизвестные и будет преобразована.\n'
@@ -267,7 +267,7 @@ class Window(QMainWindow):
                 self.status_widget.setTextColor(QColor(255, 0, 0))
             else:
                 self.gauss_warning_displayed = False
-                self.write_matrix_into_table(self.get_active_table(), matrix.beautify_gauss().elements)
+                self.write_matrix_into_table(self.active_id, matrix.beautify_gauss())
                 result = matrix.solve_gauss()
                 if len(result) == 0:
                     status_string = 'Система не имеет решений'
@@ -285,12 +285,11 @@ class Window(QMainWindow):
     def solve_invert(self):
         self.status_widget.setText('Выполняется...')
         self.status_widget.repaint()
-        elements = self.get_matrix_from_table(self.get_active_table())
-        if elements is None:
+        matrix = self.get_matrix_from_table(self.active_id)
+        if matrix.is_empty():
             self.status_widget.setText('Входная матрица пустая')
             return
         try:
-            matrix = Matrix(elements)
             coef_column = Matrix([[x] for x in matrix.get_col(matrix.column_count - 1)])
             main_matrix = matrix.remove_col(matrix.column_count - 1)
             result = (main_matrix.get_inverse() * coef_column).get_col(0)
@@ -310,36 +309,48 @@ class Window(QMainWindow):
         filename = QFileDialog.getOpenFileName(self, 'Выгрузка файла', '.')[0]
         try:
             matrix = fileutils.read_matrix_from_file(filename)
-            self.write_matrix_into_table(self.get_active_table(), matrix)
+            self.write_matrix_into_table(self.active_id, Matrix(matrix))
         except FileNotFoundError:
             self.status_widget.setText('Не получилось прочитать файл')
-
-    @staticmethod
-    def write_matrix_into_table(table: QTableWidget, matrix: list[Any]):
-        table.blockSignals(True)
-        table.setRowCount(0)
-        table.setColumnCount(0)
-        table.setRowCount(len(matrix) + 1)
-        table.setColumnCount(1 if len(matrix) == 0 else len(matrix[0]) + 1)
-        for r in range(len(matrix)):
-            for c in range(len(matrix[0])):
-                table.setItem(r, c, QTableWidgetItem(str(matrix[r][c])))
-        table.blockSignals(False)
-
-    def get_matrix_from_table(self, table):
-        """
-        Считывает список элементов из исходной таблицы.
-        :return: Список элементов.
-        """
-        elements = []
-        try:
-            for r in range(table.rowCount() - 1):
-                row = []
-                for c in range(table.columnCount() - 1):
-                    text = table.item(r, c).text()
-                    row.append(float(text) if text else 0)
-                elements.append(row)
         except ValueError:
-            self.status_widget.setText('Элементы матрицы должны быть числами')
-            return None
-        return elements
+            self.status_widget.setText('Файл содержит нечисловые значения')
+            self.write_matrix_into_table(self.active_id, Matrix())
+
+    def get_matrix_from_table(self, t_id: int):
+        return self.data[t_id]
+
+    def write_matrix_into_table(self, t_id: int, matrix: Matrix):
+        # table = [self.left_input_matrix_widget, self.right_input_matrix_widget, self.output_matrix_widget][t_id]
+        # table.blockSignals(True)
+        # table.setRowCount(0)
+        # table.setColumnCount(0)
+        # table.setRowCount(matrix.row_count + 1)
+        # table.setColumnCount(matrix.column_count + 1)
+        # for r in range(matrix.row_count):
+        #     for c in range(matrix.column_count):
+        #         table.setItem(r, c, QTableWidgetItem(strf(matrix.elements[r][c])))
+        # for r in range(matrix.row_count + 1):
+        #     table.setItem(r, matrix.column_count, QTableWidgetItem(""))
+        # for c in range(matrix.column_count + 1):
+        #     table.setItem(matrix.row_count, c, QTableWidgetItem(""))
+        # table.blockSignals(False)
+        self.data[t_id] = matrix
+        self.sync()
+
+    def sync(self):
+        for t_id in range(3):
+            table = [self.left_input_matrix_widget, self.right_input_matrix_widget, self.output_matrix_widget][t_id]
+            matrix = self.data[t_id]
+            table.blockSignals(True)
+            table.setRowCount(0)
+            table.setColumnCount(0)
+            table.setRowCount(matrix.row_count + 1)
+            table.setColumnCount(matrix.column_count + 1)
+            for r in range(matrix.row_count):
+                for c in range(matrix.column_count):
+                    table.setItem(r, c, QTableWidgetItem(strf(matrix.elements[r][c])))
+            for r in range(matrix.row_count + 1):
+                table.setItem(r, matrix.column_count, QTableWidgetItem(""))
+            for c in range(matrix.column_count + 1):
+                table.setItem(matrix.row_count, c, QTableWidgetItem(""))
+            table.blockSignals(False)

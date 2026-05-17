@@ -58,6 +58,8 @@ def strf(x):
     :param x: Число с плавающей точкой.
     :return: Отформатированная строка.
     """
+    if math.isnan(x):
+        return ""
     result = f'{round(x, 12):g}'
     return result if result != '-0' else '0'
 

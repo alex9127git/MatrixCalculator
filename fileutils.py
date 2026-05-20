@@ -21,3 +21,4 @@ def write_matrix_into_file(array, filename):
     file = open(filename, 'w', encoding='utf-8')
     for row in array:
         file.write(' '.join(map(str, row)))
+        file.write('\n')

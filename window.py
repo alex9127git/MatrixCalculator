@@ -43,12 +43,14 @@ class Window(QMainWindow):
         self.left_input_matrix_widget.cellChanged.connect(self.update_left_table)
         self.right_input_matrix_widget.cellChanged.connect(self.update_right_table)
         self.calc_det_button.clicked.connect(self.calc_det)
+        self.calc_eigen_button.clicked.connect(self.calc_eigen)
         self.calc_invert_button.clicked.connect(self.calc_invert)
         self.calc_product_button.clicked.connect(self.calc_product)
         self.solve_cramer_button.clicked.connect(self.solve_cramer)
         self.solve_gauss_button.clicked.connect(self.solve_gauss)
         self.solve_invert_button.clicked.connect(self.solve_invert)
-        self.read_matrix_button.clicked.connect(self.read_file)
+        self.read_matrix_button.clicked.connect(self.read_to_file)
+        self.write_matrix_button.clicked.connect(self.write_to_file)
         self.toggle_input_button.clicked.connect(self.toggle_input_matrix)
         self.reuse_matrix_button.clicked.connect(self.copy_output_to_active)
         self.switch_inputs_button.clicked.connect(self.swap_inputs)
@@ -302,7 +304,21 @@ class Window(QMainWindow):
         except ValueError as e:
             self.status_widget.setText(str(e))
 
-    def read_file(self):
+    def calc_eigen(self):
+        self.status_widget.setText('Выполняется...')
+        self.status_widget.repaint()
+        matrix = self.get_matrix_from_table(self.active_id)
+        if matrix.is_empty():
+            self.status_widget.setText('Входная матрица пустая')
+            return
+        try:
+            eigen_values, eigen_vectors = matrix.get_eigenvectors_matrix()
+            self.status_widget.setText(f'Собственные значения матрицы: {', '.join(map(strf, eigen_values))}')
+            self.write_matrix_into_table(2, eigen_vectors)
+        except ValueError as e:
+            self.status_widget.setText(str(e))
+
+    def read_to_file(self):
         """
         Считывает матрицу из файла и записывает её в таблицу ввода.
         """
@@ -316,24 +332,17 @@ class Window(QMainWindow):
             self.status_widget.setText('Файл содержит нечисловые значения')
             self.write_matrix_into_table(self.active_id, Matrix())
 
+    def write_to_file(self):
+        filename = QFileDialog.getSaveFileName(self, 'Сохранить как', '.')[0]
+        try:
+            fileutils.write_matrix_into_file(self.get_matrix_from_table(2).elements, filename)
+        except FileNotFoundError:
+            self.status_widget.setText('Не получилось прочитать файл')
+
     def get_matrix_from_table(self, t_id: int):
         return self.data[t_id]
 
     def write_matrix_into_table(self, t_id: int, matrix: Matrix):
-        # table = [self.left_input_matrix_widget, self.right_input_matrix_widget, self.output_matrix_widget][t_id]
-        # table.blockSignals(True)
-        # table.setRowCount(0)
-        # table.setColumnCount(0)
-        # table.setRowCount(matrix.row_count + 1)
-        # table.setColumnCount(matrix.column_count + 1)
-        # for r in range(matrix.row_count):
-        #     for c in range(matrix.column_count):
-        #         table.setItem(r, c, QTableWidgetItem(strf(matrix.elements[r][c])))
-        # for r in range(matrix.row_count + 1):
-        #     table.setItem(r, matrix.column_count, QTableWidgetItem(""))
-        # for c in range(matrix.column_count + 1):
-        #     table.setItem(matrix.row_count, c, QTableWidgetItem(""))
-        # table.blockSignals(False)
         self.data[t_id] = matrix
         self.sync()
 

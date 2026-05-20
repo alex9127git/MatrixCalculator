@@ -18,7 +18,7 @@ def test(num, test_function, test_filename, expected=None):
     :param expected: Ожидаемый результат. Если передаётся None, валидации теста не происходит.
     :return:
     """
-    if test_group_id == 3 and num == 12:
+    if test_group_id == 5 and num == 1:
         print('Entered debug')
     start = datetime.now()
     try:
@@ -70,8 +70,8 @@ def test_group(test_group_name, test_functions, test_filenames, answer_filename=
 
 
 if __name__ == '__main__':
-    folders = [os.path.join(TEST_FOLDER, f) for f in os.listdir(TEST_FOLDER)
-               if os.path.isdir(os.path.join(TEST_FOLDER, f))]
+    folders = sorted([os.path.join(TEST_FOLDER, f) for f in os.listdir(TEST_FOLDER)
+                     if os.path.isdir(os.path.join(TEST_FOLDER, f))])
 
     for test_group_id, curr_folder in enumerate(folders):
         exists_answers = os.path.exists(os.path.join(curr_folder, 'expected.txt'))

@@ -10,14 +10,15 @@ def get_oom(n):
     return math.log10(abs(n)) if n != 0 else 0
 
 
-def float_equals(n, m):
+def float_equals(n, m, precision=12):
     """
-    Сравнивает дробные числа с точностью до двенадцатого слева значащего знака.
+    Сравнивает дробные числа с указанной точностью.
     :param n: Первое число.
     :param m: Второе число.
+    :param precision: Точность сравнения (по умолчанию до двенадцатого значащего знака).
     :return: Возвращает True, если числа равны, и False, если числа не равны.
     """
-    return abs(n - m) < 10 ** (max(get_oom(n), get_oom(m)) - 12)
+    return abs(n - m) < 10 ** (max(get_oom(n), get_oom(m)) - precision)
 
 
 def multiply_row(row, c):
@@ -58,8 +59,10 @@ def strf(x):
     :param x: Число с плавающей точкой.
     :return: Отформатированная строка.
     """
-    if math.isnan(x):
+    if type(x) == float and math.isnan(x):
         return ""
+    if type(x) == complex:
+        return f'{strf(x.real)} + {strf(x.imag)}j'
     result = f'{round(x, 12):g}'
     return result if result != '-0' else '0'
 

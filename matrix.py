@@ -1,5 +1,5 @@
 import math
-
+import numpy as np
 import mathutils
 from mathutils import float_equals, multiply_row, add_rows, strf, is_zeroes
 
@@ -273,6 +273,45 @@ class Matrix:
             raise ValueError('Обратной матрицы не существует, матрица не является квадратной')
         return self.get_adjugate().transpose() * (1 / self.det())
 
+    def get_trace(self):
+        if self.row_count != self.column_count:
+            raise ValueError('След матрицы не имеет смысл для матрицы, не являющейся квадратной')
+        if self.has_nan():
+            raise ValueError('Матрица имеет пустые ячейки')
+        if self.is_empty():
+            raise ValueError('Матрица пуста')
+        trace = 0
+        for i in range(self.row_count):
+            trace += self.elements[i][i]
+        return trace
+
+    def get_eigenvalues(self):
+        """
+        Высчитывает собственные значения матрицы.
+        :return: Собственные значения матрицы, отсортированные в порядке возрастания.
+        """
+        if self.row_count != self.column_count:
+            raise ValueError('Вычисление собственных значений не имеет смысла для матрицы, не являющейся квадратной')
+        if self.has_nan():
+            raise ValueError('Матрица имеет пустые ячейки')
+        if self.is_empty():
+            raise ValueError('Матрица пуста')
+        # size = self.row_count
+        # if size == 2:
+        #     # λ² - λ * tr(A) + det(A) = 0
+        #     t = self.get_trace()
+        #     d = self.det()
+        #     return sorted([(t - (t * t - 4 * d) ** 0.5) / 2, (t + (t * t - 4 * d) ** 0.5) / 2])
+        # else:
+        return np.linalg.eig(self.elements).eigenvalues.tolist()
+
+    def get_eigenvectors_matrix(self):
+        eig = np.linalg.eig(np.array(self.elements, dtype=np.float64))
+        eig_vals = eig.eigenvalues.tolist()
+        eig_vectors = eig.eigenvectors.transpose().tolist()
+        # result = list(map(lambda x: x[1], sorted(zip(eig_vals, eig_vectors), key=lambda x: x[0])))
+        return eig_vals, Matrix(eig_vectors).transpose()
+
     def get_row(self, r) -> list[float]:
         """
         Возвращает строку матрицы по индексу r.
@@ -394,6 +433,24 @@ class Matrix:
         row2 = self.get_row(r2)
         return self.replace_row(row2, r1).replace_row(row1, r2)
 
+    def __add__(self, other):
+        if type(other) != Matrix:
+            raise ValueError("Можно сложить только матрицу с матрицей")
+        if self.row_count != other.row_count:
+            raise ValueError("Количество строк складываемых матриц должно совпадать")
+        if self.column_count != other.column_count:
+            raise ValueError("Количество столбцов складываемых матриц должно совпадать")
+        elements = []
+        for r in range(self.row_count):
+            new_row = []
+            for c in range(self.column_count):
+                new_row.append(self.elements[r][c] + other.elements[r][c])
+            elements.append(new_row)
+        return Matrix(elements)
+
+    def __sub__(self, other):
+        return self + (-other)
+
     def __eq__(self, other):
         if type(other) != Matrix:
             return False
@@ -403,7 +460,7 @@ class Matrix:
             return False
         for r in range(self.row_count):
             for c in range(self.column_count):
-                if not float_equals(self.elements[r][c], other.elements[r][c]):
+                if not float_equals(self.elements[r][c], other.elements[r][c], precision=5):
                     return False
         return True
 
@@ -411,7 +468,7 @@ class Matrix:
         return not (self == other)
 
     def __mul__(self, other):
-        if type(other) == int or type(other) == float:
+        if type(other) == int or type(other) == float or type(other) == complex:
             elements = []
             for row in self.elements:
                 new_row = []
@@ -434,3 +491,6 @@ class Matrix:
             return Matrix(elements)
         else:
             raise TypeError('Можно умножить матрицу только на число или на другую матрицу')
+
+    def __neg__(self):
+        return self * (-1)

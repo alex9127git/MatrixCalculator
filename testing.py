@@ -18,7 +18,7 @@ def test(num, test_function, test_filename, expected=None):
     :param expected: Ожидаемый результат. Если передаётся None, валидации теста не происходит.
     :return:
     """
-    if test_group_id == 5 and num == 1:
+    if test_group_id == 5 and num == 7:
         print('Entered debug')
     start = datetime.now()
     try:

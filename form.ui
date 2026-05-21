@@ -65,10 +65,10 @@
       <bool>false</bool>
      </attribute>
      <attribute name="horizontalHeaderMinimumSectionSize">
-      <number>32</number>
+      <number>48</number>
      </attribute>
      <attribute name="horizontalHeaderDefaultSectionSize">
-      <number>32</number>
+      <number>48</number>
      </attribute>
      <attribute name="horizontalHeaderHighlightSections">
       <bool>true</bool>
@@ -77,6 +77,9 @@
       <bool>false</bool>
      </attribute>
      <attribute name="verticalHeaderMinimumSectionSize">
+      <number>32</number>
+     </attribute>
+     <attribute name="verticalHeaderDefaultSectionSize">
       <number>32</number>
      </attribute>
     </widget>
@@ -106,15 +109,18 @@
       <bool>false</bool>
      </attribute>
      <attribute name="horizontalHeaderMinimumSectionSize">
-      <number>32</number>
+      <number>48</number>
      </attribute>
      <attribute name="horizontalHeaderDefaultSectionSize">
-      <number>32</number>
+      <number>48</number>
      </attribute>
      <attribute name="verticalHeaderVisible">
       <bool>false</bool>
      </attribute>
      <attribute name="verticalHeaderMinimumSectionSize">
+      <number>32</number>
+     </attribute>
+     <attribute name="verticalHeaderDefaultSectionSize">
       <number>32</number>
      </attribute>
     </widget>
@@ -147,15 +153,18 @@
       <bool>false</bool>
      </attribute>
      <attribute name="horizontalHeaderMinimumSectionSize">
-      <number>32</number>
+      <number>48</number>
      </attribute>
      <attribute name="horizontalHeaderDefaultSectionSize">
-      <number>32</number>
+      <number>48</number>
      </attribute>
      <attribute name="verticalHeaderVisible">
       <bool>false</bool>
      </attribute>
      <attribute name="verticalHeaderMinimumSectionSize">
+      <number>32</number>
+     </attribute>
+     <attribute name="verticalHeaderDefaultSectionSize">
       <number>32</number>
      </attribute>
     </widget>

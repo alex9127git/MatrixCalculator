@@ -296,21 +296,21 @@ class Matrix:
             raise ValueError('Матрица имеет пустые ячейки')
         if self.is_empty():
             raise ValueError('Матрица пуста')
-        # size = self.row_count
-        # if size == 2:
-        #     # λ² - λ * tr(A) + det(A) = 0
-        #     t = self.get_trace()
-        #     d = self.det()
-        #     return sorted([(t - (t * t - 4 * d) ** 0.5) / 2, (t + (t * t - 4 * d) ** 0.5) / 2])
-        # else:
-        return np.linalg.eig(self.elements).eigenvalues.tolist()
+        size = self.row_count
+        if size == 2:
+            # λ² - λ * tr(A) + det(A) = 0
+            t = self.get_trace()
+            d = self.det()
+            return sorted([(t - (t * t - 4 * d) ** 0.5) / 2, (t + (t * t - 4 * d) ** 0.5) / 2])
+        else:
+            return sorted(np.linalg.eig(self.elements).eigenvalues.tolist())
 
     def get_eigenvectors_matrix(self):
         eig = np.linalg.eig(np.array(self.elements, dtype=np.float64))
         eig_vals = eig.eigenvalues.tolist()
         eig_vectors = eig.eigenvectors.transpose().tolist()
-        # result = list(map(lambda x: x[1], sorted(zip(eig_vals, eig_vectors), key=lambda x: x[0])))
-        return eig_vals, Matrix(eig_vectors).transpose()
+        result = list(map(lambda x: x[1], sorted(zip(eig_vals, eig_vectors), key=lambda x: (x[0].real, x[0].imag))))
+        return sorted(eig_vals, key=lambda x: (x.real, x.imag)), Matrix(result).transpose()
 
     def get_row(self, r) -> list[float]:
         """

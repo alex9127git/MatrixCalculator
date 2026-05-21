@@ -45,5 +45,5 @@ TEST_FUNCS = [
     ] * 11,
     [
         lambda filename: test_is_eigen_correct(Matrix(read_matrix_from_file(filename)))
-    ] * 4
+    ] * 7
 ]

@@ -39,7 +39,7 @@ TEST_FUNCS = [
     ] * 11,
     [
         lambda filename: Matrix(read_matrix_from_file(filename)).solve_gauss()
-    ] * 14,
+    ] * 19,
     [
         lambda filename: test_invert(Matrix(read_matrix_from_file(filename)))
     ] * 11,

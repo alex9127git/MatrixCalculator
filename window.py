@@ -1,9 +1,9 @@
 import math
-import traceback
 
 from PyQt5 import uic
 from PyQt5.QtGui import QColor
 from PyQt5.QtWidgets import QMainWindow, QTableWidget, QPushButton, QTextEdit, QTableWidgetItem, QFileDialog, QLabel
+
 import fileutils
 from mathutils import strf
 from matrix import Matrix
@@ -264,12 +264,12 @@ class Window(QMainWindow):
         try:
             if matrix.beautify_gauss() != matrix and not self.gauss_warning_displayed:
                 self.gauss_warning_displayed = True
-                status_string = ('Матрица имеет неиспользуемые неизвестные и будет преобразована.\n'
+                status_string = ('Матрица имеет неиспользуемые неизвестные.\n'
                                  'Нажмите на кнопку ещё раз, чтобы продолжить.')
                 self.status_widget.setTextColor(QColor(255, 0, 0))
             else:
                 self.gauss_warning_displayed = False
-                self.write_matrix_into_table(self.active_id, matrix.beautify_gauss())
+                self.status_widget.setTextColor(QColor(0, 0, 0))
                 result = matrix.solve_gauss()
                 if len(result) == 0:
                     status_string = 'Система не имеет решений'
@@ -279,7 +279,6 @@ class Window(QMainWindow):
                         if i != 0:
                             status_string += ', '
                         status_string += f'x{i+1} = {result[i]}'
-                        self.status_widget.setTextColor(QColor(0, 0, 0))
             self.status_widget.setText(status_string)
         except ValueError as e:
             self.status_widget.setText(str(e))

@@ -142,9 +142,9 @@ class Matrix:
         где для строки с индексом r первые r элементов являются нулями.
         :return: Матрица ступенчатого вида.
         """
-        row_echelon = self.beautify_gauss()
+        row_echelon = self
 
-        for sr in range(0, row_echelon.column_count - 2):
+        for sr in range(0, max(row_echelon.row_count - 1, row_echelon.column_count - 2)):
             if row_echelon.get_row(sr)[sr] == 0:
                 r = sr
                 while r < row_echelon.row_count and row_echelon.get_row(r)[sr] == 0:
@@ -162,6 +162,11 @@ class Matrix:
                 curr_coef = curr_row[sr]
                 coef = -curr_coef / head_coef
                 row_echelon = row_echelon.replace_row(add_rows(curr_row, multiply_row(head_row, coef)), r)
+        r = row_echelon.row_count - 1
+        while row_echelon.row_count > row_echelon.column_count - 1 and r >= 0:
+            if is_zeroes(row_echelon.get_row(r)):
+                row_echelon = row_echelon.remove_row(r)
+            r -= 1
         return row_echelon
 
     def convert_to_diag(self):
@@ -194,6 +199,8 @@ class Matrix:
         if self.has_nan():
             raise ValueError('Матрица имеет пустые ячейки')
         diag = self.convert_to_diag()
+        if diag.row_count != diag.column_count - 1:
+            return []
         solution = []
         solution_undefined = False
         for r in range(diag.row_count - 1, -1, -1):
@@ -296,14 +303,7 @@ class Matrix:
             raise ValueError('Матрица имеет пустые ячейки')
         if self.is_empty():
             raise ValueError('Матрица пуста')
-        size = self.row_count
-        if size == 2:
-            # λ² - λ * tr(A) + det(A) = 0
-            t = self.get_trace()
-            d = self.det()
-            return sorted([(t - (t * t - 4 * d) ** 0.5) / 2, (t + (t * t - 4 * d) ** 0.5) / 2])
-        else:
-            return sorted(np.linalg.eig(self.elements).eigenvalues.tolist())
+        return sorted(np.linalg.eig(self.elements).eigenvalues.tolist())
 
     def get_eigenvectors_matrix(self):
         eig = np.linalg.eig(np.array(self.elements, dtype=np.float64))

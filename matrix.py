@@ -33,13 +33,18 @@ class Matrix:
             result += '\n'
         return result.strip()
 
+    @staticmethod
+    def get_unit_matrix(n):
+        elements = [[0] * i + [1] + [0] * (n - i - 1) for i in range(n)]
+        return Matrix(elements)
+
     def is_empty(self):
         return self.row_count == 0 or self.column_count == 0
 
     def has_nan(self):
         for row in self.elements:
             for elem in row:
-                if math.isnan(elem):
+                if type(elem) == float and math.isnan(elem):
                     return True
         return False
 
@@ -176,6 +181,7 @@ class Matrix:
         :return: Матрица диагонального вида.
         """
         row_echelon = self.convert_to_row_echelon()
+        row_echelon.remove_rounding_errors()
         diag = Matrix(row_echelon.elements)
         for r in range(diag.row_count - 2, -1, -1):
             for c in range(r + 1, diag.row_count):
@@ -198,7 +204,9 @@ class Matrix:
             raise ValueError('Матрица пуста')
         if self.has_nan():
             raise ValueError('Матрица имеет пустые ячейки')
-        diag = self.convert_to_diag()
+        matrix = self
+        matrix.remove_rounding_errors()
+        diag = matrix.convert_to_diag()
         if diag.row_count != diag.column_count - 1:
             return []
         solution = []
@@ -218,11 +226,29 @@ class Matrix:
                         if row[i] == 0:
                             continue
                         coef = row[i] / row[r]
-                        expr += f' {'+' if coef < 0 else '-'} {strf(abs(coef)) + ' ' if abs(coef) != 1 else ''}x{i+1}'
+                        expr += f' {'+' if coef.real < 0 else '-'} {strf(abs(coef)) + ' * ' if abs(coef) != 1 else ''}x{i+1}'
                     solution.insert(0, expr)
                 else:
                     solution.insert(0, strf(row[-1] / row[r]))
         return solution
+
+    def get_unit_solution(self, index):
+        solution = self.solve_gauss()
+        free_variables = solution.count('любое')
+        result = dict()
+        free = 0
+        for i in range(len(solution)):
+            if solution[i] == 'любое':
+                if index % free_variables == free:
+                    result[f'x{i+1}'] = 1
+                else:
+                    result[f'x{i+1}'] = 0
+                free += 1
+        for i in range(len(solution)-1, -1, -1):
+            if f'x{i+1}' not in result:
+                value = eval(solution[i], dict(), result)
+                result[f'x{i+1}'] = value
+        return list(map(lambda x: x[1], sorted(result.items(), key=lambda x: int(x[0][1:]))))
 
     def transpose(self):
         """
@@ -303,14 +329,26 @@ class Matrix:
             raise ValueError('Матрица имеет пустые ячейки')
         if self.is_empty():
             raise ValueError('Матрица пуста')
-        return sorted(np.linalg.eig(self.elements).eigenvalues.tolist())
+        return sorted(map(lambda x: round(x, 12) if type(x) == float else x,
+                          np.linalg.eig(self.elements).eigenvalues.tolist()),
+                      key=lambda x: (x.real, x.imag))
 
     def get_eigenvectors_matrix(self):
-        eig = np.linalg.eig(np.array(self.elements, dtype=np.float64))
-        eig_vals = eig.eigenvalues.tolist()
-        eig_vectors = eig.eigenvectors.transpose().tolist()
-        result = list(map(lambda x: x[1], sorted(zip(eig_vals, eig_vectors), key=lambda x: (x[0].real, x[0].imag))))
-        return sorted(eig_vals, key=lambda x: (x.real, x.imag)), Matrix(result).transpose()
+        # eig = np.linalg.eig(np.array(self.elements, dtype=np.float64))
+        # eig_vals = eig.eigenvalues.tolist()
+        # eig_vectors = eig.eigenvectors.transpose().tolist()
+        # result = list(map(lambda x: x[1], sorted(zip(eig_vals, eig_vectors), key=lambda x: (x[0].real, x[0].imag))))
+        # return sorted(eig_vals, key=lambda x: (x.real, x.imag)), Matrix(result).transpose()
+        elements = []
+        eigenvalues = self.get_eigenvalues()
+        count = dict()
+        for value in eigenvalues:
+            count.setdefault(value, 0)
+            system = self - Matrix.get_unit_matrix(self.row_count) * value
+            system = system.insert_col([0] * self.row_count, self.column_count)
+            elements.append(system.get_unit_solution(count[value]))
+            count[value] += 1
+        return eigenvalues, Matrix(elements).transpose()
 
     def get_row(self, r) -> list[float]:
         """
@@ -432,6 +470,15 @@ class Matrix:
         row1 = self.get_row(r1)
         row2 = self.get_row(r2)
         return self.replace_row(row2, r1).replace_row(row1, r2)
+
+    def remove_rounding_errors(self):
+        for row in range(self.row_count):
+            for col in range(self.column_count):
+                x = self.elements[row][col]
+                if round(x.imag, 6) == 0:
+                    self.elements[row][col] = x.real
+                if round(x.real, 12) == 0:
+                    self.elements[row][col] = 0
 
     def __add__(self, other):
         if type(other) != Matrix:
